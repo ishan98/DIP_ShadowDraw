@@ -20,7 +20,7 @@ def extract_features(image, vector_size=32):
 			if dsc.size < needed_size:
 				dsc = np.concatenate([dsc, np.zeros(needed_size - dsc.size)])
 			dsc = dsc[:2048]
-			#print(len(dsc))
+			#print(dsc)
 		else:
 			return(np.zeros(vector_size * 64))
 	except cv2.error as e:
