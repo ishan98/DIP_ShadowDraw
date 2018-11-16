@@ -67,7 +67,7 @@ for root, dirnames, filenames in os.walk("./dataset/test_image"):
     for filename in filenames:
         filepath = os.path.join(root, filename)
         test_image = ndimage.imread(filepath, mode="L")
-        test_image_resized = misc.imresize(test_image, (300, 300))
+        test_image_resized = misc.imresize(test_image, (480, 480))
         test_images.append(test_image_resized)
 
 
@@ -80,71 +80,103 @@ for root, dirnames, filenames in os.walk("./dataset/image_dataset"):
         imdata_resized = misc.imresize(imdata, (300, 300))
         imdataset.append(imdata_resized)
 
+edges = []
+for i in range(len(test_images)):
+	getImage = test_images[i]
+	getedges = cv2.Canny(getImage,100,200)
+	edges.append(getedges)
 
+train_edges = []
+for i in range(len(imdataset)):
+	getImage = imdataset[i]
+	getedges = cv2.Canny(getImage,100,200)
+	train_edges.append(getedges)
 
-feature_dataset = []
-for x in range(len(imdataset)):
-	train_image = imdataset[x]
-	getfeatures = extract_features(train_image)
-	feature_dataset.append(getfeatures)
+test_images = edges
+imdataset = train_edges
+
+trainImagePatch = []
+for n in range(len(imdataset)):
+	getEdgeImage = imdataset[n]
+	gettrainImagePatch = []
+	for x in range(9):
+		for y in range(9):
+			image_patch = getEdgeImage[x*30:x*30+60:1, y*30:y*30+60:1]
+			gettrainImagePatch.append(image_patch)
+	trainImagePatch.append(gettrainImagePatch)
+
+testImagePatch = []
+for n in range(len(test_images)):
+	getEdgeImage = test_images[n]
+	gettestImagePatch = []
+	for x in range(18):
+		for y in range(18):
+			image_patch = getEdgeImage[x*24:x*24+96:1, y*24:y*24+96:1]
+			gettestImagePatch.append(image_patch)
+	testImagePatch.append(gettestImagePatch)	
+
+train_feature_dataset = []
+for x in range(len(trainImagePatch)):
+	feature_dataset = []
+	for y in range(len(trainImagePatch[0])):
+		train_image = trainImagePatch[x][y]
+		getfeatures = extract_features(train_image)
+		feature_dataset.append(getfeatures)
+	train_feature_dataset.append(feature_dataset)
 
 test_feature_dataset = []
-for a in range(len(test_images)):
-	get_test_image = test_images[a]
-	test_feature = extract_features(get_test_image)
-	test_feature_dataset.append(test_feature)
+for a in range(len(testImagePatch)):
+	feature_dataset = []
+	for b in range(len(testImagePatch[0])):
+		get_test_image = testImagePatch[a][b]
+		test_feature = extract_features(get_test_image)
+		feature_dataset.append(test_feature)
+	test_feature_dataset.append(feature_dataset)
 
 
 numOfPermute = 20
 kOfPermute = 3
-arrayIndex = np.zeros(len(imdataset))
-testarrayIndex = np.zeros([numOfPermute,len(test_images)])
+#print(len(arrayIndex),len(arrayIndex[0]))
+testarrayIndex = np.zeros([numOfPermute,len(test_feature_dataset),len(test_feature_dataset[0])])
 power_array = np.zeros(3)
 getMatchIndex = defaultdict(list)
 power_array[0] = 1
 power_array[1] = 10
 power_array[2] = 100
-for numpermute in range(numOfPermute):
-	arrayIndex = np.zeros(len(imdataset))
 
+for numpermute in range(numOfPermute):
+	arrayIndex = np.zeros([len(train_feature_dataset),len(train_feature_dataset[0])])
 	for p in range(kOfPermute):
-		
 		permute_value = np.random.permutation(2048)
-		#if(numpermute==0 and p==0):
-		#	f=open("features.txt", "w+")
-		#	f.write(permute_value)
-		#	f.close()
-		#else:
-		#	f=open("features.txt", "a+")
-		#	f.write(permute_value)
-		#	f.close()
-		for x in range(len(imdataset)):
-			getindex = allowPermute(feature_dataset[x],permute_value)
-			arrayIndex[x] = (getindex*power_array[p]) + arrayIndex[x]
+		
+		for x in range(len(train_feature_dataset)):
+			for z in range(len(train_feature_dataset[0])):
+				getindex = allowPermute(train_feature_dataset[x][z],permute_value)
+				arrayIndex[x][z] = (getindex*power_array[p]) + arrayIndex[x][z]
 			#print(arrayIndex[x])
 		
-		for y in range(len(test_images)):
-			getindex2 = allowPermute(test_feature_dataset[y],permute_value)
-			testarrayIndex[numpermute][y] = (getindex2*power_array[p]) + testarrayIndex[numpermute][y]
+		for y in range(len(test_feature_dataset)):
+			for w in range(len(test_feature_dataset[0])):
+				getindex2 = allowPermute(test_feature_dataset[y][w],permute_value)
+				testarrayIndex[numpermute][y][w] = (getindex2*power_array[p]) + testarrayIndex[numpermute][y][w]
 			#print(testarrayIndex[numpermute][y])
 
 		#print([arrayIndex[0],testarrayIndex[numpermute][0]])
-	for g in range(len(imdataset)):
-		#print(arrayIndex[g])
-		getMatchIndex[arrayIndex[g]].append(g)
+	for g in range(len(train_feature_dataset)):
+		for h in range(len(train_feature_dataset[0])):
+			getMatchIndex[arrayIndex[g][h]].append(g)
 
 kmin = 6
-for m in range(len(test_images)):
+for m in range(len(test_feature_dataset)):
 	Match_value = np.zeros(len(imdataset))
-	get_test_image = test_images[m]
-	for num in range(numOfPermute):
-		#print(len(getMatchIndex[testarrayIndex[num][m]]))
-		for j in range(len(getMatchIndex[testarrayIndex[num][m]])):
-			#print('Hello')
-			Match_value[getMatchIndex[testarrayIndex[num][m]][j]] = Match_value[getMatchIndex[testarrayIndex[num][m]][j]] + 1
+	for n in range(len(test_feature_dataset[0])):
+		get_test_image = testImagePatch[m][n]
+		for num in range(numOfPermute):
+			for j in range(len(getMatchIndex[testarrayIndex[num][m][n]])):
+				Match_value[getMatchIndex[testarrayIndex[num][m][n]][j]] = Match_value[getMatchIndex[testarrayIndex[num][m][n]][j]] + 1
 	idxMostmatched = Match_value.argsort()[-1:-kmin:-1]
 	plt.figure(m)
-	plt.subplot(231),plt.imshow(get_test_image,cmap = 'gray')
+	plt.subplot(231),plt.imshow(test_images[m],cmap = 'gray')
 	plt.subplot(232),plt.imshow(imdataset[idxMostmatched[0]],cmap = 'gray')
 	plt.subplot(233),plt.imshow(imdataset[idxMostmatched[1]],cmap = 'gray')
 	plt.subplot(234),plt.imshow(imdataset[idxMostmatched[2]],cmap = 'gray')

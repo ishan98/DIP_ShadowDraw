@@ -1,0 +1,154 @@
+import cv2
+import os
+import math
+from scipy import ndimage, misc
+import numpy as np
+from matplotlib import pyplot as plt
+from scipy import spatial
+
+def drawMatches(img1, kp1, img2, kp2, matches):
+
+    rows1 = img1.shape[0]
+    cols1 = img1.shape[1]
+    rows2 = img2.shape[0]
+    cols2 = img2.shape[1]
+
+    out = np.zeros((max([rows1,rows2]),cols1+cols2,3), dtype='uint8')
+    out[:rows1,:cols1] = np.dstack([img1])
+    out[:rows2,cols1:] = np.dstack([img2])
+    for mat in matches:
+        img1_idx = mat.queryIdx
+        img2_idx = mat.trainIdx
+        (x1,y1) = kp1[img1_idx].pt
+        (x2,y2) = kp2[img2_idx].pt
+
+        cv2.circle(out, (int(x1),int(y1)), 4, (255, 0, 0, 1), 1)   
+        cv2.circle(out, (int(x2)+cols1,int(y2)), 4, (255, 0, 0, 1), 1)
+        cv2.line(out, (int(x1),int(y1)), (int(x2)+cols1,int(y2)), (255, 0, 0, 1), 1)
+
+    return out
+
+def getFeatureMap(img, sift):
+	kp, des = sift.detectAndCompute(img,None)
+	temp_vector = np.zeros(128)
+	if(len(kp) != 0):
+		for x in range(len(des)):
+			for y in range(128):
+				temp_vector[y] = des[x][y]
+	#print(temp_vector)
+	return(temp_vector)
+
+def getMatch(feature_map1,feature_map2):
+	#intersection_cardinality = len(set.intersection(*[set(feature_map1), set(feature_map2)]))
+	#union_cardinality = len(set.union(*[set(feature_map1), set(feature_map2)]))
+	#return intersection_cardinality/float(union_cardinality)
+
+	match_value = 0
+	result = spatial.distance.cosine(feature_map1, feature_map2)
+	return(result)
+	
+	#for x in range(len(feature_map1)):
+	#	match_value = match_value + abs(feature_map1[x] - feature_map2[x])
+	#return(match_value)
+
+
+#resizing the images
+test_images = []
+for root, dirnames, filenames in os.walk("./dataset/test_image"):
+    for filename in filenames:
+        filepath = os.path.join(root, filename)
+        test_image = ndimage.imread(filepath, mode="L")
+        test_image_resized = misc.imresize(test_image, (300, 300))
+        test_images.append(test_image_resized)
+
+imdataset = []
+for root, dirnames, filenames in os.walk("./dataset/image_dataset"):
+    for filename in filenames:
+        filepath = os.path.join(root, filename)
+        imdata = ndimage.imread(filepath, mode="L")
+        imdata_resized = misc.imresize(imdata, (300, 300))
+        imdataset.append(imdata_resized)
+
+sift = cv2.xfeatures2d.SIFT_create()
+feature_dataset = []
+for x in range(len(imdataset)):
+	train_image = imdataset[x]
+	getfeatures = getFeatureMap(train_image,sift)
+	feature_dataset.append(getfeatures)
+
+kmin = 5
+for a in range(len(test_images)):
+	get_test_image = test_images[a]
+	test_feature = getFeatureMap(get_test_image,sift)
+	Match_value = np.zeros(len(imdataset))
+	for z in range(len(imdataset)):
+		getMatchPair = feature_dataset[z]
+		getMatchValue = getMatch(test_feature,getMatchPair)
+		Match_value[z] = getMatchValue
+	idx = np.argsort(Match_value)
+	print(Match_value[idx[:kmin]])
+	plt.figure(a)
+	plt.subplot(231),plt.imshow(get_test_image,cmap = 'gray')
+	plt.subplot(232),plt.imshow(imdataset[idx[0]],cmap = 'gray')
+	plt.subplot(233),plt.imshow(imdataset[idx[1]],cmap = 'gray')
+	plt.subplot(234),plt.imshow(imdataset[idx[2]],cmap = 'gray')
+	plt.subplot(235),plt.imshow(imdataset[idx[3]],cmap = 'gray')
+	plt.subplot(236),plt.imshow(imdataset[idx[4]],cmap = 'gray')
+plt.show()
+
+
+"""
+
+#[NoOfImages, length, breadth] = [len(images), len(images[0]), len(images[0][0])]
+
+#getting the edges 
+edges = []
+for i in range(NoOfImages):
+	getImage = images[i]
+	getedges = cv2.Canny(getImage,100,200)
+	edges.append(getedges)
+
+
+[NoOfEdges, lenEdges, brEdges] = [len(edges), len(edges[0]), len(edges[0][0])]
+#print(NoOfEdges, lenEdges, brEdges)
+
+first_image = edges[0]
+second_image = edges[1]
+third_image = edges[2]
+
+sift = cv2.xfeatures2d.SIFT_create()
+feature_map1 = getFeatureMap(first_image)
+feature_map2 = getFeatureMap(second_image)
+feature_map3 = getFeatureMap(third_image)
+
+match_value1 = getMatch(feature_map1,feature_map2)
+match_value2 = getMatch(feature_map2,feature_map3)
+match_value3 = getMatch(feature_map3,feature_map1)
+
+print(match_value1,match_value2, match_value3)
+cv2.imshow('Matched Features', first_image)
+cv2.waitKey(0)
+cv2.destroyWindow('Matched Features')
+
+"""
+
+
+
+
+
+
+
+#kp1, des1 = sift.detectAndCompute(first_image,None)
+#kp2, des2 = sift.detectAndCompute(second_image,None)
+
+#bf = cv2.BFMatcher()
+#matches = bf.match(des1,des2)
+#matches = sorted(matches, key=lambda val: val.distance)
+#img3 = drawMatches(first_image,kp1,second_image,kp2,matches[:50])
+
+# Show the image
+#cv2.imshow('Matched Features', img3)
+#cv2.waitKey(0)
+#cv2.destroyWindow('Matched Features')
+
+
