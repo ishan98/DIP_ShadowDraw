@@ -77,7 +77,13 @@ for x in range(len(imdataset)):
 	feature_dataset.append(getfeatures)
 
 kmin = 5
+final_image_created = np.zeros(shape=[300, 300])
+
 for a in range(len(test_images)):
+
+	total_match_value = 0;
+	new_image_formed = np.zeros(shape=[300, 300])
+	
 	get_test_image = test_images[a]
 	test_feature = getFeatureMap(get_test_image,sift)
 	Match_value = np.zeros(len(imdataset))
@@ -87,6 +93,7 @@ for a in range(len(test_images)):
 		Match_value[z] = getMatchValue
 	idx = np.argsort(Match_value)
 	print(Match_value[idx[:kmin]])
+	
 	plt.figure(a)
 	plt.subplot(231),plt.imshow(get_test_image,cmap = 'gray')
 	plt.subplot(232),plt.imshow(imdataset[idx[0]],cmap = 'gray')
@@ -95,7 +102,35 @@ for a in range(len(test_images)):
 	plt.subplot(235),plt.imshow(imdataset[idx[3]],cmap = 'gray')
 	plt.subplot(236),plt.imshow(imdataset[idx[4]],cmap = 'gray')
 plt.show()
+'''
+	for im in range(kmin):
+		for x_image in range(300):
+			for y_image in range(300):
+				if(imdataset[idx[im]][x_image][y_image] < 200):
+					#new_image_formed[x_image][y_image] = new_image_formed[x_image][y_image] + 1 - Match_value[idx[im]]
+					new_image_formed[x_image][y_image] = new_image_formed[x_image][y_image] + ((2.31)**(-1*Match_value[idx[im]]))
 
+	for ind in range(kmin):
+		#total_match_value = total_match_value + 1 - Match_value[idx[ind]]
+		total_match_value = total_match_value + (2.31**(-1*Match_value[idx[ind]]))
+
+	for x_image in range(300):
+			for y_image in range(300):
+				final_image_created[x_image][y_image] = int((1.0 - (float(new_image_formed[x_image][y_image])/float(total_match_value)) )*255.0);
+				#if(final_image_created[x_image][y_image] > 120 and final_image_created[x_image][y_image] < 200 ):
+					#print(final_image_created[x_image][y_image])
+	
+	blur = cv2.blur(final_image_created,(15,15))
+	#plt.imshow(blur,cmap = 'gray');
+	plt.figure(a)
+	plt.subplot(121),plt.imshow(get_test_image,cmap = 'gray')
+	plt.subplot(122),plt.imshow(blur,cmap = 'gray')
+	plt.show()
+'''
+
+	
+
+	
 
 """
 
