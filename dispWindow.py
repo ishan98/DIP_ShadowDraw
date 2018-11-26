@@ -1,5 +1,11 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import cv2
 import numpy as np
+import sys
+import os
 
 windowName = 'Drawing Demo'
 img = np.zeros((512, 512, 3), np.uint8)
@@ -39,13 +45,22 @@ cv2.setMouseCallback(windowName, draw_shape)
 def main():
     global mode
     
+    if len(sys.argv) != 2:
+    	print('The run formation is python dispWindow.py filename')
+    	print('filename: name of the file to save(do not enter the full path)')
+    	print('Eg: python dispWindow.py img1.png')
+    	sys.exit()
+    else:
+    	saved_filename = sys.argv[1]
+
     while(True):
         cv2.imshow(windowName, img)
         
         k = cv2.waitKey(1)
         if k == ord('m') or k == ord('M'):
             mode = not mode
-        elif k == 27:
+        elif k == 27:		# Esc button
+                cv2.imwrite('dataset/test_images/'+saved_filename,img)
                 break
 
     cv2.destroyAllWindows()
