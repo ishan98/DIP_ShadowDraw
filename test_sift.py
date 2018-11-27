@@ -164,13 +164,14 @@ def forming_shadow(feature_dataset,alg,imdataset):
 						#final_image_created[x_image][y_image] = 0;
 						#print(get_test_image[x_image][y_image])
 		#plt.imshow(blur,cmap = 'gray');
-		plt.figure(a)
+		# plt.figure(a)
+		plt.ion()
 		plt.imshow(blur,cmap = 'gray')
 		#plt.subplot(121),plt.imshow(get_test_image,cmap = 'gray')
 		#plt.subplot(122),plt.imshow(blur,cmap = 'gray')
 		plt.show()
 		plt.pause(4)
-		plt.close()
+		plt.close('all')
 	
 '''
 		print(Match_value[idx[:kmin]])
