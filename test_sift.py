@@ -83,27 +83,16 @@ def getMatch(feature_map1,feature_map2):
 	#	match_value = match_value + abs(feature_map1[x] - feature_map2[x])
 	#return(match_value)
 
-def runFile():
+#def runFile():
+def makebagofwords():
 	#resizing the images
-	test_images = []
-	for root, dirnames, filenames in os.walk("./dataset/test_image"):
-	    for filename in filenames:
-	        filepath = os.path.join(root, filename)
-	        test_image = ndimage.imread(filepath, mode="L")
-	        test_image_resized = misc.imresize(test_image, (300, 300))
-	        for temp in range(300):
-	        	for temp2 in range(300):
-	        		test_image_resized[temp][temp2] = 255 - test_image_resized[temp][temp2]  
-	        test_images.append(test_image_resized)
-
 	imdataset = []
 	for root, dirnames, filenames in os.walk("./dataset/image_dataset"):
-	    for filename in filenames:
-	        filepath = os.path.join(root, filename)
-	        imdata = ndimage.imread(filepath, mode="L")
-	        imdata_resized = misc.imresize(imdata, (300, 300))
-	        imdataset.append(imdata_resized)
-
+		for filename in filenames:
+			filepath = os.path.join(root, filename)
+			imdata = ndimage.imread(filepath, mode="L")
+			imdata_resized = misc.imresize(imdata, (300, 300))
+			imdataset.append(imdata_resized)
 	sift = cv2.xfeatures2d.SIFT_create()
 	alg = cv2.KAZE_create()
 
@@ -114,10 +103,28 @@ def runFile():
 		#getfeatures = getFeatureMap(train_image,sift)
 		feature_dataset.append(getfeatures)
 
+	return(feature_dataset,alg,imdataset)
+
+
+
+def formingshadow(feature_dataset,alg,imdataset):
 	kmin = 5
 	final_image_created = np.zeros(shape=[300, 300])
 
+	test_images = []
+	for root, dirnames, filenames in os.walk("./dataset/test_images"):
+		for filename in filenames:
+			filepath = os.path.join(root, filename)
+			test_image = ndimage.imread(filepath, mode="L")
+			test_image_resized = misc.imresize(test_image, (300, 300))
+			for temp in range(300):
+				for temp2 in range(300):
+					test_image_resized[temp][temp2] = 255 - test_image_resized[temp][temp2]  
+	        test_images.append(test_image_resized)
+
 	for a in range(len(test_images)):
+		#print(a)
+		#print(len(test_images))
 
 		total_match_value = 0;
 		new_image_formed = np.zeros(shape=[300, 300])
@@ -131,6 +138,39 @@ def runFile():
 			getMatchValue = getMatch(test_feature,getMatchPair)
 			Match_value[z] = getMatchValue
 		idx = np.argsort(Match_value)
+
+		for im in range(kmin):
+			for x_image in range(300):
+				for y_image in range(300):
+					if(imdataset[idx[im]][x_image][y_image] < 200):
+						#new_image_formed[x_image][y_image] = new_image_formed[x_image][y_image] + 1 - Match_value[idx[im]]
+						new_image_formed[x_image][y_image] = new_image_formed[x_image][y_image] + ((2.31)**(-1*Match_value[idx[im]]))
+
+		for ind in range(kmin):
+			#total_match_value = total_match_value + 1 - Match_value[idx[ind]]
+			total_match_value = total_match_value + (2.31**(-1*Match_value[idx[ind]]))
+
+		for x_image in range(300):
+				for y_image in range(300):
+					final_image_created[x_image][y_image] = int((1.0 - (float(new_image_formed[x_image][y_image])/float(total_match_value)) )*255.0);
+					#if(final_image_created[x_image][y_image] > 120 and final_image_created[x_image][y_image] < 200 ):
+						#print(final_image_created[x_image][y_image])
+		
+		blur = cv2.blur(final_image_created,(15,15))
+		for x_image in range(300):
+				for y_image in range(300):
+					if(get_test_image[x_image][y_image] < 200):
+						blur[x_image][y_image] = 150
+						#final_image_created[x_image][y_image] = 0;
+						#print(get_test_image[x_image][y_image])
+		#plt.imshow(blur,cmap = 'gray');
+		plt.figure(a)
+		plt.imshow(blur,cmap = 'gray')
+		#plt.subplot(121),plt.imshow(get_test_image,cmap = 'gray')
+		#plt.subplot(122),plt.imshow(blur,cmap = 'gray')
+		plt.show()
+	
+'''
 		print(Match_value[idx[:kmin]])
 		
 		plt.figure(a)
@@ -141,11 +181,14 @@ def runFile():
 		plt.subplot(235),plt.imshow(imdataset[idx[3]],cmap = 'gray')
 		plt.subplot(236),plt.imshow(imdataset[idx[4]],cmap = 'gray')
 	plt.show()
-
+'''
 def timepass():
 	print('Hi')
 
-	
+def runFile():
+	feature_dataset,alg,imdataset = makebagofwords()
+	formingshadow(feature_dataset,alg,imdataset)
+
 def main():
 	"""Main function."""
 	runFile()
@@ -155,31 +198,6 @@ if __name__=='__main__':
 	
 	
 
-'''
-	for im in range(kmin):
-		for x_image in range(300):
-			for y_image in range(300):
-				if(imdataset[idx[im]][x_image][y_image] < 200):
-					#new_image_formed[x_image][y_image] = new_image_formed[x_image][y_image] + 1 - Match_value[idx[im]]
-					new_image_formed[x_image][y_image] = new_image_formed[x_image][y_image] + ((2.31)**(-1*Match_value[idx[im]]))
-
-	for ind in range(kmin):
-		#total_match_value = total_match_value + 1 - Match_value[idx[ind]]
-		total_match_value = total_match_value + (2.31**(-1*Match_value[idx[ind]]))
-
-	for x_image in range(300):
-			for y_image in range(300):
-				final_image_created[x_image][y_image] = int((1.0 - (float(new_image_formed[x_image][y_image])/float(total_match_value)) )*255.0);
-				#if(final_image_created[x_image][y_image] > 120 and final_image_created[x_image][y_image] < 200 ):
-					#print(final_image_created[x_image][y_image])
-	
-	blur = cv2.blur(final_image_created,(15,15))
-	#plt.imshow(blur,cmap = 'gray');
-	plt.figure(a)
-	plt.subplot(121),plt.imshow(get_test_image,cmap = 'gray')
-	plt.subplot(122),plt.imshow(blur,cmap = 'gray')
-	plt.show()
-'''
 
 
 	
