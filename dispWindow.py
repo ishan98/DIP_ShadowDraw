@@ -7,6 +7,9 @@ import numpy as np
 import sys
 import os
 import test_sift
+import time
+
+INTERVAL = 4
 
 windowName = 'Drawing Demo'
 img = np.zeros((512, 512, 3), np.uint8)
@@ -54,17 +57,30 @@ def main():
 	else:
 		saved_filename = sys.argv[1]
 
+	feature_dataset,alg,imdataset = test_sift.make_bag_of_words()
+	counter = 0
+
 	while(True):
 		cv2.imshow(windowName, img)
 
 		k = cv2.waitKey(1)
 		if k == ord('m') or k == ord('M'):
 			mode = not mode
-		elif k == ord('r'):
-			cv2.imwrite('dataset/test_images/'+saved_filename,img)
-			test_sift.runFile()
+		# elif k == ord('r'):
+		# 	cv2.imwrite('dataset/test_images/'+saved_filename,img)
+		# 	test_sift.forming_shadow(feature_dataset,alg,imdataset)
 		elif k == 27:		# Esc button
 			break
+
+		counter += 1
+
+		if(counter == 3000):
+			print('Started')
+			cv2.imwrite('dataset/test_images/'+saved_filename,img)
+			# time.sleep(INTERVAL)
+			test_sift.forming_shadow(feature_dataset,alg,imdataset)
+			print('Done')
+			counter = 0
 
 	cv2.destroyAllWindows()
 

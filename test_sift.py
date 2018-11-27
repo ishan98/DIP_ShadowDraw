@@ -10,6 +10,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy import spatial
 
+
 def drawMatches(img1, kp1, img2, kp2, matches):
 
     rows1 = img1.shape[0]
@@ -83,8 +84,7 @@ def getMatch(feature_map1,feature_map2):
 	#	match_value = match_value + abs(feature_map1[x] - feature_map2[x])
 	#return(match_value)
 
-#def runFile():
-def makebagofwords():
+def make_bag_of_words():
 	#resizing the images
 	imdataset = []
 	for root, dirnames, filenames in os.walk("./dataset/image_dataset"):
@@ -107,7 +107,7 @@ def makebagofwords():
 
 
 
-def formingshadow(feature_dataset,alg,imdataset):
+def forming_shadow(feature_dataset,alg,imdataset):
 	kmin = 5
 	final_image_created = np.zeros(shape=[300, 300])
 
@@ -120,7 +120,7 @@ def formingshadow(feature_dataset,alg,imdataset):
 			for temp in range(300):
 				for temp2 in range(300):
 					test_image_resized[temp][temp2] = 255 - test_image_resized[temp][temp2]  
-	        test_images.append(test_image_resized)
+			test_images.append(test_image_resized)
 
 	for a in range(len(test_images)):
 		#print(a)
@@ -169,6 +169,8 @@ def formingshadow(feature_dataset,alg,imdataset):
 		#plt.subplot(121),plt.imshow(get_test_image,cmap = 'gray')
 		#plt.subplot(122),plt.imshow(blur,cmap = 'gray')
 		plt.show()
+		plt.pause(4)
+		plt.close()
 	
 '''
 		print(Match_value[idx[:kmin]])
@@ -182,16 +184,11 @@ def formingshadow(feature_dataset,alg,imdataset):
 		plt.subplot(236),plt.imshow(imdataset[idx[4]],cmap = 'gray')
 	plt.show()
 '''
-def timepass():
-	print('Hi')
-
-def runFile():
-	feature_dataset,alg,imdataset = makebagofwords()
-	formingshadow(feature_dataset,alg,imdataset)
-
+	
 def main():
 	"""Main function."""
-	runFile()
+	feature_dataset,alg,imdataset = make_bag_of_words()
+	forming_shadow(feature_dataset,alg,imdataset)
 	
 if __name__=='__main__':
 	main()
