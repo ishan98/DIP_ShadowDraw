@@ -1,3 +1,7 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import cv2
 import os
 import math
@@ -47,7 +51,7 @@ def extract_features(image, alg, vector_size=32):
 		else:
 			return(np.zeros(vector_size * 64))
 	except cv2.error as e:
-		print 'Error: ', e
+		print('Error: ', e)
 		return None
 	idx = dsc.argsort()[-1:-411:-1]
 	binarize_dsc = np.zeros(2048)
@@ -79,64 +83,77 @@ def getMatch(feature_map1,feature_map2):
 	#	match_value = match_value + abs(feature_map1[x] - feature_map2[x])
 	#return(match_value)
 
+def runFile():
+	#resizing the images
+	test_images = []
+	for root, dirnames, filenames in os.walk("./dataset/test_image"):
+	    for filename in filenames:
+	        filepath = os.path.join(root, filename)
+	        test_image = ndimage.imread(filepath, mode="L")
+	        test_image_resized = misc.imresize(test_image, (300, 300))
+	        for temp in range(300):
+	        	for temp2 in range(300):
+	        		test_image_resized[temp][temp2] = 255 - test_image_resized[temp][temp2]  
+	        test_images.append(test_image_resized)
 
-#resizing the images
-test_images = []
-for root, dirnames, filenames in os.walk("./dataset/test_image"):
-    for filename in filenames:
-        filepath = os.path.join(root, filename)
-        test_image = ndimage.imread(filepath, mode="L")
-        test_image_resized = misc.imresize(test_image, (300, 300))
-        for temp in range(300):
-        	for temp2 in range(300):
-        		test_image_resized[temp][temp2] = 255 - test_image_resized[temp][temp2]  
-        test_images.append(test_image_resized)
+	imdataset = []
+	for root, dirnames, filenames in os.walk("./dataset/image_dataset"):
+	    for filename in filenames:
+	        filepath = os.path.join(root, filename)
+	        imdata = ndimage.imread(filepath, mode="L")
+	        imdata_resized = misc.imresize(imdata, (300, 300))
+	        imdataset.append(imdata_resized)
 
-imdataset = []
-for root, dirnames, filenames in os.walk("./dataset/image_dataset"):
-    for filename in filenames:
-        filepath = os.path.join(root, filename)
-        imdata = ndimage.imread(filepath, mode="L")
-        imdata_resized = misc.imresize(imdata, (300, 300))
-        imdataset.append(imdata_resized)
+	sift = cv2.xfeatures2d.SIFT_create()
+	alg = cv2.KAZE_create()
 
-sift = cv2.xfeatures2d.SIFT_create()
-alg = cv2.KAZE_create()
+	feature_dataset = []
+	for x in range(len(imdataset)):
+		train_image = imdataset[x]
+		getfeatures = extract_features(train_image, alg)
+		#getfeatures = getFeatureMap(train_image,sift)
+		feature_dataset.append(getfeatures)
 
-feature_dataset = []
-for x in range(len(imdataset)):
-	train_image = imdataset[x]
-	getfeatures = extract_features(train_image, alg)
-	#getfeatures = getFeatureMap(train_image,sift)
-	feature_dataset.append(getfeatures)
+	kmin = 5
+	final_image_created = np.zeros(shape=[300, 300])
 
-kmin = 5
-final_image_created = np.zeros(shape=[300, 300])
+	for a in range(len(test_images)):
 
-for a in range(len(test_images)):
+		total_match_value = 0;
+		new_image_formed = np.zeros(shape=[300, 300])
+		
+		get_test_image = test_images[a]
+		test_feature = extract_features(get_test_image, alg)
+		#test_feature = getFeatureMap(get_test_image,sift)
+		Match_value = np.zeros(len(imdataset))
+		for z in range(len(imdataset)):
+			getMatchPair = feature_dataset[z]
+			getMatchValue = getMatch(test_feature,getMatchPair)
+			Match_value[z] = getMatchValue
+		idx = np.argsort(Match_value)
+		print(Match_value[idx[:kmin]])
+		
+		plt.figure(a)
+		plt.subplot(231),plt.imshow(get_test_image,cmap = 'gray')
+		plt.subplot(232),plt.imshow(imdataset[idx[0]],cmap = 'gray')
+		plt.subplot(233),plt.imshow(imdataset[idx[1]],cmap = 'gray')
+		plt.subplot(234),plt.imshow(imdataset[idx[2]],cmap = 'gray')
+		plt.subplot(235),plt.imshow(imdataset[idx[3]],cmap = 'gray')
+		plt.subplot(236),plt.imshow(imdataset[idx[4]],cmap = 'gray')
+	plt.show()
 
-	total_match_value = 0;
-	new_image_formed = np.zeros(shape=[300, 300])
+def timepass():
+	print('Hi')
+
 	
-	get_test_image = test_images[a]
-	test_feature = extract_features(get_test_image, alg)
-	#test_feature = getFeatureMap(get_test_image,sift)
-	Match_value = np.zeros(len(imdataset))
-	for z in range(len(imdataset)):
-		getMatchPair = feature_dataset[z]
-		getMatchValue = getMatch(test_feature,getMatchPair)
-		Match_value[z] = getMatchValue
-	idx = np.argsort(Match_value)
-	print(Match_value[idx[:kmin]])
+def main():
+	"""Main function."""
+	runFile()
 	
-	plt.figure(a)
-	plt.subplot(231),plt.imshow(get_test_image,cmap = 'gray')
-	plt.subplot(232),plt.imshow(imdataset[idx[0]],cmap = 'gray')
-	plt.subplot(233),plt.imshow(imdataset[idx[1]],cmap = 'gray')
-	plt.subplot(234),plt.imshow(imdataset[idx[2]],cmap = 'gray')
-	plt.subplot(235),plt.imshow(imdataset[idx[3]],cmap = 'gray')
-	plt.subplot(236),plt.imshow(imdataset[idx[4]],cmap = 'gray')
-plt.show()
+if __name__=='__main__':
+	main()
+	
+	
 
 '''
 	for im in range(kmin):
