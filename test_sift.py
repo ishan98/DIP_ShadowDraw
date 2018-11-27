@@ -28,7 +28,35 @@ def drawMatches(img1, kp1, img2, kp2, matches):
 
     return out
 
+
+def extract_features(image, alg, vector_size=32):
+	#print('Hello')
+	try:
+		
+		#alg = cv2.xfeatures2d.SIFT_create()
+		kps = alg.detect(image)
+		kps = sorted(kps, key=lambda x: -x.response)[:vector_size]
+		kps, dsc = alg.compute(image, kps)
+		if(len(kps) != 0):
+			dsc = dsc.flatten()
+			needed_size = (vector_size * 64)
+			if dsc.size < needed_size:
+				dsc = np.concatenate([dsc, np.zeros(needed_size - dsc.size)])
+			dsc = dsc[:2048]
+			#print(dsc)
+		else:
+			return(np.zeros(vector_size * 64))
+	except cv2.error as e:
+		print 'Error: ', e
+		return None
+	idx = dsc.argsort()[-1:-411:-1]
+	binarize_dsc = np.zeros(2048)
+	binarize_dsc[idx[:]] = 1
+	return(binarize_dsc)
+
+
 def getFeatureMap(img, sift):
+	#alg = cv2.KAZE_create()
 	kp, des = sift.detectAndCompute(img,None)
 	temp_vector = np.zeros(128)
 	if(len(kp) != 0):
@@ -59,6 +87,9 @@ for root, dirnames, filenames in os.walk("./dataset/test_image"):
         filepath = os.path.join(root, filename)
         test_image = ndimage.imread(filepath, mode="L")
         test_image_resized = misc.imresize(test_image, (300, 300))
+        for temp in range(300):
+        	for temp2 in range(300):
+        		test_image_resized[temp][temp2] = 255 - test_image_resized[temp][temp2]  
         test_images.append(test_image_resized)
 
 imdataset = []
@@ -70,10 +101,13 @@ for root, dirnames, filenames in os.walk("./dataset/image_dataset"):
         imdataset.append(imdata_resized)
 
 sift = cv2.xfeatures2d.SIFT_create()
+alg = cv2.KAZE_create()
+
 feature_dataset = []
 for x in range(len(imdataset)):
 	train_image = imdataset[x]
-	getfeatures = getFeatureMap(train_image,sift)
+	getfeatures = extract_features(train_image, alg)
+	#getfeatures = getFeatureMap(train_image,sift)
 	feature_dataset.append(getfeatures)
 
 kmin = 5
@@ -85,7 +119,8 @@ for a in range(len(test_images)):
 	new_image_formed = np.zeros(shape=[300, 300])
 	
 	get_test_image = test_images[a]
-	test_feature = getFeatureMap(get_test_image,sift)
+	test_feature = extract_features(get_test_image, alg)
+	#test_feature = getFeatureMap(get_test_image,sift)
 	Match_value = np.zeros(len(imdataset))
 	for z in range(len(imdataset)):
 		getMatchPair = feature_dataset[z]
@@ -102,6 +137,7 @@ for a in range(len(test_images)):
 	plt.subplot(235),plt.imshow(imdataset[idx[3]],cmap = 'gray')
 	plt.subplot(236),plt.imshow(imdataset[idx[4]],cmap = 'gray')
 plt.show()
+
 '''
 	for im in range(kmin):
 		for x_image in range(300):
@@ -127,6 +163,7 @@ plt.show()
 	plt.subplot(122),plt.imshow(blur,cmap = 'gray')
 	plt.show()
 '''
+
 
 	
 
